@@ -1,192 +1,138 @@
-# Initializing the window of Python Image Steganography Project
-root = Tk()
-root.title('ProjectGurukul Image Steganography')
-root.geometry('300x200')
-root.resizable(0, 0)
-root.config(bg='NavajoWhite')
-
-Label(root, text='ProjectGurukul Image Steganography', font=('Comic Sans MS', 15), bg='NavajoWhite',
-      wraplength=300).place(x=40, y=0)
-
-Button(root, text='Encode', width=25, font=('Times New Roman', 13), bg='SteelBlue', command=encode_image).place(
-    x=30, y=80)
-
-Button(root, text='Decode', width=25, font=('Times New Roman', 13), bg='SteelBlue', command=decode_image).place(
-    x=30, y=130)
-
-# Finalizing the window
-root.update()
-root.mainloop()
-
-
-
-# Creating the basic Image Steganography functions using python
-def generate_data(pixels, data):
-    # This function will convert the incoming data to 8-bit binary format using its ASCII values and return them
-    data_in_binary = []
-
-    for i in data:
-        binary_data = format(ord(i), '08b')
-        data_in_binary.append(binary_data)
-
-    length_of_data = len(data_in_binary)
-    image_data = iter(pixels)
-
-    for a in range(length_of_data):
-        pixels = [val for val in image_data.__next__()[:3] + image_data.__next__()[:3] + image_data.__next__()[:3]]
-
-        for b in range(8):
-            if (data_in_binary[a][b] == '1') and (pixels[b] % 2 != 0):
-                pixels[b] -= 1
-            elif (data_in_binary[a][b] == '0') and (pixels[b] % 2 == 0):
-                if pixels[b] == 0:
-                    pixels[b] += 1
-                pixels[b] -= 1
-
-        if (length_of_data-1) == a:
-            if pixels[-1] % 2 == 0:
-                if pixels[-1] == 0:
-                    pixels[-1] += 1
-                else:
-                    pixels[-1] -= 1
-
-        pixels = tuple(pixels)
-
-        yield pixels[:3]
-        yield pixels[3:6]
-        yield pixels[6:9]
-
-
-def encryption(img, data):
-    # This method will encode data to the new image that will be created
-    size = img.size[0]
-    (x, y) = (0, 0)
-
-    for pixel in generate_data(img.getdata(), data):
-        img.putpixel((x, y), pixel)
-        if size-1 == x:
-            x = 0; y += 1
-        else:
-            x += 1
-
-
-def main_encryption(img, text, new_image_name):
-    # This function will take the arguments, create a new image, encode it and save it to the same directory
-    image = Image.open(img, 'r')
-
-    if (len(text) == 0) or (len(img) == 0) or (len(new_image_name) == 0):
-        mb.showerror("Error", 'You have not put a value! Please put all values before pressing the button')
-
-    new_image = image.copy()
-    encryption(new_image, text)
-
-    new_image_name += '.png'
-
-    new_image.save(new_image_name, 'png')
-
-
-def main_decryption(img, strvar):
-    # This function will decode the image given to it and extract the hidden message from it
-    image = Image.open(img, 'r')
-
-    data = ''
-    image_data = iter(image.getdata())
-
-    decoding = True
-
-    while decoding:
-        pixels = [value for value in image_data.__next__()[:3] + image_data.__next__()[:3] + image_data.__next__()[:3]]
-
-        # string of binary data
-        binary_string = ''
-
-        for i in pixels[:8]:
-            if i % 2 == 0:
-                binary_string += '0'
-            else:
-                binary_string += '1'
-
-        data += chr(int(binary_string, 2))
-        if pixels[-1] % 2 != 0:
-            strvar.set(data)
-
-
-
-
-
-
-
-
-            # Creating the button functions
-def encode_image():
-    encode_wn = Toplevel(root)
-    encode_wn.title("Encode an Image")
-    encode_wn.geometry('600x220')
-    encode_wn.resizable(0, 0)
-    encode_wn.config(bg='AntiqueWhite')
-    Label(encode_wn, text='Encode an Image', font=("Comic Sans MS", 15), bg='AntiqueWhite').place(x=220, rely=0)
-
-    Label(encode_wn, text='Enter the path to the image(with extension):', font=("Times New Roman", 13),
-          bg='AntiqueWhite').place(x=10, y=50)
-    Label(encode_wn, text='Enter the data to be encoded:', font=("Times New Roman", 13), bg='AntiqueWhite').place(
-        x=10, y=90)
-    Label(encode_wn, text='Enter the output file name (without extension):', font=("Times New Roman", 13),
-          bg='AntiqueWhite').place(x=10, y=130)
-
-    img_path = Entry(encode_wn, width=35)
-    img_path.place(x=350, y=50)
-
-    text_to_be_encoded = Entry(encode_wn, width=35)
-    text_to_be_encoded.place(x=350, y=90)
-
-    after_save_path = Entry(encode_wn, width=35)
-    after_save_path.place(x=350, y=130)
-
-    Button(encode_wn, text='Encode the Image', font=('Helvetica', 12), bg='PaleTurquoise', command=lambda:
-    main_encryption(img_path.get(), text_to_be_encoded.get(), after_save_path.get())).place(x=220, y=175)
-
-
-def decode_image():
-    decode_wn = Toplevel(root)
-    decode_wn.title("Decode an Image")
-    decode_wn.geometry('600x300')
-    decode_wn.resizable(0, 0)
-    decode_wn.config(bg='Bisque')
-
-    Label(decode_wn, text='Decode an Image', font=("Comic Sans MS", 15), bg='Bisque').place(x=220, rely=0)
-
-    Label(decode_wn, text='Enter the path to the image (with extension):', font=("Times New Roman", 12),
-          bg='Bisque').place(x=10, y=50)
-
-    img_entry = Entry(decode_wn, width=35)
-    img_entry.place(x=350, y=50)
-
-    text_strvar = StringVar()
-
-    Button(decode_wn, text='Decode the Image', font=('Helvetica', 12), bg='PaleTurquoise', command=lambda:
-    main_decryption(img_entry.get(), text_strvar)).place(x=220, y=90)
-
-    Label(decode_wn, text='Text that has been encoded in the image:', font=("Times New Roman", 12), bg='Bisque').place(
-        x=180, y=130)
-
-    text_entry = Entry(decode_wn, width=94, text=text_strvar, state='disabled')
-    text_entry.place(x=15, y=160, height=100)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    
+# Python program implementing Image Steganography
+
+# PIL module is used to extract
+# pixels of image and modify it
+from PIL import Image
+
+# Convert encoding data into 8-bit binary
+# form using ASCII value of characters
+def genData(data):
+
+		# list of binary codes
+		# of given data
+		newd = []
+
+		for i in data:
+			newd.append(format(ord(i), '08b'))
+		return newd
+
+# Pixels are modified according to the
+# 8-bit binary data and finally returned
+def modPix(pix, data):
+
+	datalist = genData(data)
+	lendata = len(datalist)
+	imdata = iter(pix)
+
+	for i in range(lendata):
+
+		# Extracting 3 pixels at a time
+		pix = [value for value in imdata.__next__()[:3] +
+								imdata.__next__()[:3] +
+								imdata.__next__()[:3]]
+
+		# Pixel value should be made
+		# odd for 1 and even for 0
+		for j in range(0, 8):
+			if (datalist[i][j] == '0' and pix[j]% 2 != 0):
+				pix[j] -= 1
+
+			elif (datalist[i][j] == '1' and pix[j] % 2 == 0):
+				if(pix[j] != 0):
+					pix[j] -= 1
+				else:
+					pix[j] += 1
+				# pix[j] -= 1
+
+		# Eighth pixel of every set tells
+		# whether to stop ot read further.
+		# 0 means keep reading; 1 means thec
+		# message is over.
+		if (i == lendata - 1):
+			if (pix[-1] % 2 == 0):
+				if(pix[-1] != 0):
+					pix[-1] -= 1
+				else:
+					pix[-1] += 1
+
+		else:
+			if (pix[-1] % 2 != 0):
+				pix[-1] -= 1
+
+		pix = tuple(pix)
+		yield pix[0:3]
+		yield pix[3:6]
+		yield pix[6:9]
+
+def encode_enc(newimg, data):
+	w = newimg.size[0]
+	(x, y) = (0, 0)
+
+	for pixel in modPix(newimg.getdata(), data):
+
+		# Putting modified pixels in the new image
+		newimg.putpixel((x, y), pixel)
+		if (x == w - 1):
+			x = 0
+			y += 1
+		else:
+			x += 1
+
+# Encode data into image
+def encode():
+	img = input("Enter image name(with extension) : ")
+	image = Image.open(img, 'r')
+
+	data = input("Enter data to be encoded : ")
+	if (len(data) == 0):
+		raise ValueError('Data is empty')
+
+	newimg = image.copy()
+	encode_enc(newimg, data)
+
+	new_img_name = input("Enter the name of new image(with extension) : ")
+	newimg.save(new_img_name, str(new_img_name.split(".")[1].upper()))
+
+# Decode the data in the image
+def decode():
+	img = input("Enter image name(with extension) : ")
+	image = Image.open(img, 'r')
+
+	data = ''
+	imgdata = iter(image.getdata())
+
+	while (True):
+		pixels = [value for value in imgdata.__next__()[:3] +
+								imgdata.__next__()[:3] +
+								imgdata.__next__()[:3]]
+
+		# string of binary data
+		binstr = ''
+
+		for i in pixels[:8]:
+			if (i % 2 == 0):
+				binstr += '0'
+			else:
+				binstr += '1'
+
+		data += chr(int(binstr, 2))
+		if (pixels[-1] % 2 != 0):
+			return data
+
+# Main Function
+def main():
+	a = int(input(":: Welcome to Steganography ::\n"
+						"1. Encode\n2. Decode\n"))
+	if (a == 1):
+		encode()
+
+	elif (a == 2):
+		print("Decoded Word : " + decode())
+	else:
+		raise Exception("Enter correct input")
+
+# Driver Code
+if __name__ == '__main__' :
+
+	# Calling main function
+	main()
